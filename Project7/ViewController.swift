@@ -32,32 +32,45 @@ class ViewController: UITableViewController {
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Credits", style: .plain, target: self, action: #selector(showCredits))
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Search", style: .plain, target: self, action: #selector(searchAndUpdateResults))
-        
-        if let url = URL(string: urlString) {
-            if let data = try? Data(contentsOf: url) {
-                // we're OK to parse!
-                parse(json: data)
-                return
+        DispatchQueue.global(qos: .userInitiated).async {
+            [weak self] in
+            if let url = URL(string: self!.urlString) {
+                if let data = try? Data(contentsOf: url) {
+                    // we're OK to parse!
+                    self?.parse(json: data)
+                    return
+                }
             }
+            self?.showError()
+
         }
-        showError()
+       
     }
     
-    func showError() {
+    @objc func showError() {
+        DispatchQueue.main.async {
+            [weak self ] in
         let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
+            self?.present(ac, animated: true)
+        }
     }
     
     func parse(json: Data) {
-        let decoder = JSONDecoder()
-        
-        if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
-            petitions = jsonPetitions.results
-            searchPetitions = petitions
-            tableView.reloadData()
+            let decoder = JSONDecoder()
+
+            if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
+                petitions = jsonPetitions.results
+                searchPetitions = petitions
+                DispatchQueue.main.async {
+                    self.tableView.reloadData()
+                }
+            } else {
+                performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
+            }
         }
-    }
+    
+    
     
     @objc func showCredits () {
         let creditText = "The data comes from \(urlString)"
