@@ -21,6 +21,14 @@ class ViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
+       
+        
+        //the other method is performSelector(inBackground:) and performSelector(onMainThread:).
+        performSelector(inBackground: #selector(fetchJSON), with: nil)
+       
+    }
+    
+    @objc func fetchJSON() {
         if navigationController?.tabBarItem.tag == 0 {
             // urlString = "https://api.whitehouse.gov/v1/petitions.json?limit=100"
             urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
@@ -32,32 +40,60 @@ class ViewController: UITableViewController {
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Credits", style: .plain, target: self, action: #selector(showCredits))
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Search", style: .plain, target: self, action: #selector(searchAndUpdateResults))
-        
-        if let url = URL(string: urlString) {
+        ///////USING DISPATCH QUEUE////////
+//        DispatchQueue.global(qos: .userInitiated).async {
+//            [weak self] in
+//            if let url = URL(string: self!.urlString) {
+//                if let data = try? Data(contentsOf: url) {
+//                    // we're OK to parse!
+//                    self?.parse(json: data)
+//                    return
+//                }
+//            }
+//            showError()
+//        }
+        ///////END OF USING DISPATCH QUEUE////////
+        ///
+        if let url = URL(string: self.urlString) {
             if let data = try? Data(contentsOf: url) {
                 // we're OK to parse!
                 parse(json: data)
                 return
             }
         }
-        showError()
+        performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
     }
     
-    func showError() {
+    @objc func showError() {
+//        DispatchQueue.main.async {
+//            [weak self ] in
+//        let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
+//        ac.addAction(UIAlertAction(title: "OK", style: .default))
+//            self?.present(ac, animated: true)
+//        }
         let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default))
-        present(ac, animated: true)
+            present(ac, animated: true)
     }
     
     func parse(json: Data) {
-        let decoder = JSONDecoder()
-        
-        if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
-            petitions = jsonPetitions.results
-            searchPetitions = petitions
-            tableView.reloadData()
+            let decoder = JSONDecoder()
+
+            if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
+                petitions = jsonPetitions.results
+                searchPetitions = petitions
+                //dispatch method
+//                DispatchQueue.main.async {
+//                    self.tableView.reloadData()
+//                }
+                //performSelector method. both worl
+                tableView.performSelector(onMainThread: #selector(UITableView.reloadData), with: nil, waitUntilDone: false)
+            } else {
+                performSelector(onMainThread: #selector(showError), with: nil, waitUntilDone: false)
+            }
         }
-    }
+    
+    
     
     @objc func showCredits () {
         let creditText = "The data comes from \(urlString)"
