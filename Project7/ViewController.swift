@@ -77,14 +77,17 @@ class ViewController: UITableViewController {
         let submitAction = UIAlertAction(title: "Search", style: .default) { [weak self, weak getSearchString] _ in
             guard let myString = getSearchString?.textFields?[0].text?.lowercased() else { return }
             self?.searchString = myString
-            self?.searchAction()
+            
+            self?. performSelector(inBackground: #selector(self?.searchAction), with: nil)
+            
             
         }
-        getSearchString.addAction(submitAction)
+        getSearchString.addAction(#selector(submitAction))
         present(getSearchString, animated: true)
     }
     
-    func searchAction() {
+    @objc func searchAction() {
+        
         if searchString == "" {
             searchPetitions = petitions
         }
